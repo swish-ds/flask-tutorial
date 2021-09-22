@@ -1,21 +1,34 @@
 # contains the application factory
 # tells Python that the flaskr directory should be treated as a package
 import os
+import app_config
 
-from flask import Flask
+
+from flask import Flask, current_app
+from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
+
+db = SQLAlchemy()
+migrate = Migrate()
+
+def init_app(app):
+    db.init_app(app)
+    db.app = app
+    migrate.init_app(app, db)
 
 
 def create_app(test_config=None):
     # create and configure the app
     app = Flask(__name__, instance_relative_config=True) # configuration files are relative to the instance folder located outside the flaskr package
-    app.config.from_mapping(
-        SECRET_KEY='dev', # used by Flask and extensions to keep data safe
-        DATABASE=os.path.join(app.instance_path, 'flaskr.sqlite'),
-    ) # some default configuration
+
+    # app.config.from_mapping(
+    #     SECRET_KEY='dev', # used by Flask and extensions to keep data safe
+    #     # DATABASE=os.path.join(app.instance_path, 'flaskr.sqlite'),
+    # ) # some default configuration
 
     if test_config is None:
         # load the instance config, if it exists, when not testing
-        app.config.from_pyfile('config.py', silent=True)
+        app.config.from_object(app_config.Config)
     else:
         # load the test config if passed in
         app.config.from_mapping(test_config)
@@ -26,10 +39,13 @@ def create_app(test_config=None):
     except OSError:
         pass
 
+    init_app(app)
+
     # a simple page that says hello
     @app.route('/hello')
     def hello():
-        return 'Hello, World!'
+        # return 'Hello, World!'
+        return current_app.config['SQLALCHEMY_DATABASE_URI']
 
     from . import db
     db.init_app(app)
@@ -41,3 +57,5 @@ def create_app(test_config=None):
     app.add_url_rule('/', endpoint='index')
 
     return app
+
+from flaskr.models import ainfs
