@@ -3,9 +3,63 @@ from flask import (
 )
 from werkzeug.exceptions import abort
 
-from flaskr.db import get_db
+from flaskr import db
+from flaskr.models.ainfs import Post
 
 bp = Blueprint('blog', __name__)
+
+@bp.route('/posts', methods=['POST', 'GET'])
+def handle_posts():
+    if request.method == 'POST':
+        if request.is_json:
+            data = request.get_json()
+            new_post = Post(title=data['title'], body=data['body'])
+            db.session.add(new_post)
+            db.session.commit()
+            return {"message": f"Post {new_post.title} has been created successfully."}
+        else:
+            return {"error": "The request payload is not in JSON format"}
+
+    elif request.method == 'GET':
+        posts = Post.query.all()
+        results = [
+            {
+                "title": post.title,
+                "body": post.body
+            } for post in posts]
+
+        return {"count": len(results), "posts": results}
+
+
+@bp.route('/posts/<post_id>', methods=['GET', 'PUT', 'DELETE'])
+def handle_car(post_id):
+    post = Post.query.get_or_404(post_id)
+
+    if request.method == 'GET':
+        response = {
+            "title": post.title,
+            "body": post.body
+        }
+        return {"message": "success", "post": response}
+
+    elif request.method == 'PUT':
+        data = request.get_json()
+        post.title = data['title']
+        post.body = data['body']
+        db.session.add(post)
+        db.session.commit()
+        return {"message": f"Post {post.title} successfully updated"}
+
+    elif request.method == 'DELETE':
+        db.session.delete(post)
+        db.session.commit()
+        return {"message": f"Post {post.title} successfully deleted."}
+
+
+
+
+
+
 
 @bp.route('/')
 def index():

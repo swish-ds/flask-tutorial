@@ -5,14 +5,6 @@ from sqlalchemy.dialects.postgresql import UUID
 from flaskr import db
 from . import Base, CreatedAtMixin, TimestampMixin
 
-# CREATE TABLE post (
-#   id INTEGER PRIMARY KEY AUTOINCREMENT,
-#   created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-#   title TEXT NOT NULL,
-#   body TEXT NOT NULL
-# );
-
-
 class Zones(CreatedAtMixin, Base, db.Model):
     name = db.Column(db.String(50), nullable=False, unique=True)
 
@@ -29,6 +21,7 @@ class Jobs(TimestampMixin, Base, db.Model):
     zone_info = relationship("Zones", back_populates='jobs')
 
 
-class Post(CreatedAtMixin, Base, db.Model):
+class Post(CreatedAtMixin, db.Model):
+    id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(50), nullable=False, unique=True)
     body = db.Column(db.String(), nullable=False)
