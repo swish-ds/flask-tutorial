@@ -1,0 +1,7 @@
+version: '2.4'
+services:
+  adminer:
+    image: adminer:standalone
+    command: php -S 0.0.0.0:8080 -t /var/www/html
+    ports:
+      - 8084:8080
