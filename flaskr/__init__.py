@@ -7,9 +7,20 @@ import app_config
 from flask import Flask, current_app
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
+from datetime import datetime
+import jinja2
+
 
 db = SQLAlchemy()
 migrate = Migrate()
+
+
+def datetime_format(value):
+    return datetime.strptime(value, '%a, %d %b %Y %H:%M:%S %Z').strftime('%Y-%m-%d %H:%M:%S')
+
+
+jinja2.filters.FILTERS["datetime_format"] = datetime_format
+
 
 def init_app(app):
     db.init_app(app)
@@ -55,6 +66,9 @@ def create_app(test_config=None):
     # url_for('index') or url_for('blog.index') will both work, generating the same "/" URL
     app.register_blueprint(blog.bp)
     app.add_url_rule('/', endpoint='index')
+
+    from .api.v1 import bp as api_bp
+    app.register_blueprint(api_bp , url_prefix='/api/v1')
 
     return app
 
