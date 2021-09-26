@@ -20,7 +20,7 @@ def app():
     app_context = app.app_context()
     # DB engine gets populated.
     app_context.push()
-    # db.drop_all()
+    # db.drop_all
     db.create_all()
 
     yield app

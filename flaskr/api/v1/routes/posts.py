@@ -30,6 +30,7 @@ def create_post():
     }
     return jsonify(results)
 
+
 @bp.route('/posts/<int:post_id>', methods=['GET'])
 def get_post(post_id):
     post = Post.query.get_or_404(post_id)
@@ -70,4 +71,3 @@ def delete_post(post_id):
     
 
     return jsonify(results)
-

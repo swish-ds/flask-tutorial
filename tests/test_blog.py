@@ -1,4 +1,3 @@
-import pytest
 import json
 
 test_post = {
@@ -17,7 +16,7 @@ test_post_put = {
 }
 
 
-def test_create(client, app):
+def test_create(client):
     response = client.post('/api/v1/posts',
                         data=json.dumps(test_post),
                         headers={'Content-Type': 'application/json'})
@@ -26,7 +25,7 @@ def test_create(client, app):
     assert data['Result'] == f"Post '{test_post['title']}' created."
 
 
-def test_get_by_id(client, app):
+def test_get_by_id(client):
     response_post = client.post('/api/v1/posts',
                         data=json.dumps(test_post),
                         headers={'Content-Type': 'application/json'})
@@ -42,7 +41,7 @@ def test_get_by_id(client, app):
     assert data['Post']['body'] == test_post['body']
 
 
-def test_get_all(client, app):
+def test_get_all(client):
     response_post = client.post('/api/v1/posts',
                         data=json.dumps(test_post),
                         headers={'Content-Type': 'application/json'})
@@ -69,7 +68,7 @@ def test_get_all(client, app):
     assert data['posts'][1]['body'] == test_post2['body']
 
 
-def test_update(client, app):
+def test_update(client):
     response_post = client.post('/api/v1/posts',
                         data=json.dumps(test_post),
                         headers={'Content-Type': 'application/json'})
@@ -84,7 +83,7 @@ def test_update(client, app):
     assert data['Result'] == f"Post '{test_post_put['title']}' updated."
 
 
-def test_delete(client, app):
+def test_delete(client):
     response_post = client.post('/api/v1/posts',
                         data=json.dumps(test_post),
                         headers={'Content-Type': 'application/json'})
@@ -103,14 +102,14 @@ def test_delete(client, app):
     assert response_get.status_code == 404
 
 
-def test_create_error(client, app):
+def test_create_error(client):
     response = client.post('/api/v1/posts',
                         data='post',
                         headers={'Content-Type': 'application/json'})
     assert response.status_code == 400
 
 
-def test_update_error(client, app):
+def test_update_error(client):
     response = client.post('/api/v1/posts',
                         data=json.dumps(test_post),
                         headers={'Content-Type': 'application/json'})
