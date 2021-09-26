@@ -1,48 +1,43 @@
 # contains setup functions called fixtures that each test will use
-# Each test will create a new temporary database file and populate some data that will be used in the tests. (tests/data.sql)
 
-import os
-import tempfile
+from app_config import Config
 
 import pytest
-from flaskr import create_app
-from flaskr.db import get_db, init_db
-
-with open(os.path.join(os.path.dirname(__file__), 'data.sql'), 'rb') as f:
-    _data_sql = f.read().decode('utf8')
+from flaskr import create_app, db
 
 
-@pytest.fixture
+class TestConfig(Config):
+    TESTING = True
+
+# scope = session ??
+@pytest.fixture()
 def app():
-    # will call the factory and pass test_config to configure the application and database for testing
-    db_fd, db_path = tempfile.mkstemp()
+    # will call the factory and pass TestConfig to configure the application and database for testing
+    # create_app() gives us an app object, but the imported db isn’t connected (it has no engine)
+    app = create_app(TestConfig)
 
-    app = create_app({
-        'TESTING': True,
-        'DATABASE': db_path,
-    })
-
-    # After setting the path, the database tables are created and the test data is inserted
-    # Each test will create a new temporary database file and populate some data that will be used in the tests.
-    with app.app_context():
-        # everything that runs in the block will have access to current_app.
-        init_db()
-        get_db().executescript(_data_sql)
+    #create an AppContext instalnce and bind context to it. The same as with app.app_context(): ... ?
+    app_context = app.app_context()
+    # DB engine gets populated.
+    app_context.push()
+    # db.drop_all()
+    db.create_all()
 
     yield app
 
-    # After the test is over, the temporary file is closed and removed.
-    os.close(db_fd)
-    os.unlink(db_path)
+    db.session.remove()
+    db.drop_all()
+    app_context.pop()
 
 
-@pytest.fixture
+@pytest.fixture()
 def client(app):
     # Tests will use the client to make requests to the application without running the server.
     return app.test_client()
 
 
-@pytest.fixture
-def runner(app):
-    # creates a runner that can call the Click commands registered with the application.
-    return app.test_cli_runner()
+@pytest.fixture(scope='module')
+def test_client(app):
+    with app.test_client() as testing_client:
+        with app.app_context():
+            yield testing_client

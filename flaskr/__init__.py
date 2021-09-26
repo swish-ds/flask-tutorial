@@ -23,6 +23,9 @@ jinja2.filters.FILTERS["datetime_format"] = datetime_format
 
 
 def init_app(app):
+    # init_app prepares the application to work with SQLAlchemy. 
+    # However that does not now bind the SQLAlchemy object to your application. 
+    # Because there might be more than one application created.
     db.init_app(app)
     db.app = app
     migrate.init_app(app, db)
@@ -42,7 +45,7 @@ def create_app(test_config=None):
         app.config.from_object(app_config.Config)
     else:
         # load the test config if passed in
-        app.config.from_mapping(test_config)
+        app.config.from_object(test_config)
 
     # ensure the instance folder exists
     try:
@@ -57,9 +60,6 @@ def create_app(test_config=None):
     def hello():
         # return 'Hello, World!'
         return current_app.config['SQLALCHEMY_DATABASE_URI']
-
-    from . import db
-    db.init_app(app)
 
     from . import blog
     # add_url_rule() associates the endpoint name 'index' with the "/"" url

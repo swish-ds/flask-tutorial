@@ -1,68 +1,125 @@
 import pytest
-from flaskr.db import get_db
+import json
 
+test_post = {
+    "title": "Test post title",
+    "body": "Test post text"
+}
 
-def test_index(client):
-    response = client.get('/')
+test_post2 = {
+    "title": "Test post title2",
+    "body": "Test post text2"
+}
 
-    # subsequent requests from the client will be logged in as the test user.
-    response = client.get('/')
-    # index view should display information about the post that was added with the test data.
-    assert b'test title' in response.data
-    assert b'test\nbody' in response.data
-    # When logged in as the author, there should be a link to edit the post.
-    assert b'href="/1/update"' in response.data
-
-
-@pytest.mark.parametrize(
-    'path', 
-    ('/2/update', '/2/delete',)
-)
-def test_exists_required(client, path):
-    # If a post with the given id doesn’t exist, update and delete should return 404 Not Found.
-    assert client.post(path).status_code == 404
+test_post_put = {
+    "title": "Updated post title",
+    "body": "Updated post text"
+}
 
 
 def test_create(client, app):
-    assert client.get('/create').status_code == 200
-    client.post('/create', data={'title': 'created', 'body': ''})
+    response = client.post('/api/v1/posts',
+                        data=json.dumps(test_post),
+                        headers={'Content-Type': 'application/json'})
+    data = json.loads(response.data.decode())
+    assert response.status_code == 200
+    assert data['Result'] == f"Post '{test_post['title']}' created."
 
-    with app.app_context():
-        db = get_db()
-        # When valid data is sent in a POST request, create should insert the new post data into the database
-        count = db.execute('SELECT COUNT(id) FROM post').fetchone()[0]
-        assert count == 2
+
+def test_get_by_id(client, app):
+    response_post = client.post('/api/v1/posts',
+                        data=json.dumps(test_post),
+                        headers={'Content-Type': 'application/json'})
+    data = json.loads(response_post.data.decode())
+    assert response_post.status_code == 200
+    assert data['Result'] == f"Post '{test_post['title']}' created."
+
+    response_get = client.get('/api/v1/posts/1')
+    data = json.loads(response_get.data.decode())
+    assert response_get.status_code == 200
+    assert data['Post']['id'] == 1
+    assert data['Post']['title'] == test_post['title']
+    assert data['Post']['body'] == test_post['body']
+
+
+def test_get_all(client, app):
+    response_post = client.post('/api/v1/posts',
+                        data=json.dumps(test_post),
+                        headers={'Content-Type': 'application/json'})
+    data = json.loads(response_post.data.decode())
+    assert response_post.status_code == 200
+    assert data['Result'] == f"Post '{test_post['title']}' created."
+
+    response_post = client.post('/api/v1/posts',
+                        data=json.dumps(test_post2),
+                        headers={'Content-Type': 'application/json'})
+    data = json.loads(response_post.data.decode())
+    assert response_post.status_code == 200
+    assert data['Result'] == f"Post '{test_post2['title']}' created."
+
+    response_get = client.get('/api/v1/posts')
+    data = json.loads(response_get.data.decode())
+    assert response_get.status_code == 200
+    assert len(data['posts']) == 2
+    assert data['posts'][0]['id'] == 1
+    assert data['posts'][0]['title'] == test_post['title']
+    assert data['posts'][0]['body'] == test_post['body']
+    assert data['posts'][1]['id'] == 2
+    assert data['posts'][1]['title'] == test_post2['title']
+    assert data['posts'][1]['body'] == test_post2['body']
 
 
 def test_update(client, app):
-    assert client.get('/1/update').status_code == 200
-    client.post('/1/update', data={'title': 'updated', 'body': ''})
+    response_post = client.post('/api/v1/posts',
+                        data=json.dumps(test_post),
+                        headers={'Content-Type': 'application/json'})
+    data = json.loads(response_post.data.decode())
+    assert response_post.status_code == 200
+    assert data['Result'] == f"Post '{test_post['title']}' created."
 
-    with app.app_context():
-        db = get_db()
-        # When valid data is sent in a POST request, update should modify the existing data.
-        post = db.execute('SELECT * FROM post WHERE id = 1').fetchone()
-        assert post['title'] == 'updated'
-
-
-@pytest.mark.parametrize(
-    'path', 
-    ('/create','/1/update',)
-)
-def test_create_update_validate(client, path):
-    # Both pages should show an error message on invalid data.
-    response = client.post(path, data={'title': '', 'body': ''})
-    assert b'Title is required.' in response.data
+    response_put = client.put('/api/v1/posts/1',
+                        data=json.dumps(test_post_put),
+                        headers={'Content-Type': 'application/json'})
+    data = json.loads(response_put.data.decode())
+    assert data['Result'] == f"Post '{test_post_put['title']}' updated."
 
 
 def test_delete(client, app):
-    # delete view should redirect to the index URL
-    response = client.post('/1/delete')
-    assert response.headers['Location'] == 'http://localhost/'
+    response_post = client.post('/api/v1/posts',
+                        data=json.dumps(test_post),
+                        headers={'Content-Type': 'application/json'})
+    data = json.loads(response_post.data.decode())
+    assert response_post.status_code == 200
+    assert data['Result'] == f"Post '{test_post['title']}' created."
 
-    with app.app_context():
-        db = get_db()
-        # post should no longer exist in the database.
-        post = db.execute('SELECT * FROM post WHERE id = 1').fetchone()
-        assert post is None
+    response_delete = client.delete('/api/v1/posts/1',
+                        data=json.dumps(test_post),
+                        headers={'Content-Type': 'application/json'})
+    data = json.loads(response_delete.data.decode())
+    assert response_delete.status_code == 200
+    assert data['Result'] == f"Post '{test_post['title']}' deleted."
+
+    response_get = client.get('/api/v1/posts/1')
+    assert response_get.status_code == 404
+
+
+def test_create_error(client, app):
+    response = client.post('/api/v1/posts',
+                        data='post',
+                        headers={'Content-Type': 'application/json'})
+    assert response.status_code == 400
+
+
+def test_update_error(client, app):
+    response = client.post('/api/v1/posts',
+                        data=json.dumps(test_post),
+                        headers={'Content-Type': 'application/json'})
+    data = json.loads(response.data.decode())
+    assert response.status_code == 200
+    assert data['Result'] == f"Post '{test_post['title']}' created."
+
+    response_put = client.put('/api/v1/posts/1',
+                        data='post',
+                        headers={'Content-Type': 'application/json'})
+    assert response_put.status_code == 400
 

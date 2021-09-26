@@ -1,7 +1,7 @@
 from flaskr import db
 from flaskr.models.ainfs import Post
 from flaskr.api.v1 import bp
-from flask import jsonify, request
+from flask import jsonify, request, Response
 
 
 @bp.route('/posts', methods=['GET'])
@@ -21,17 +21,14 @@ def get_posts():
 
 @bp.route('/posts', methods=['POST'])
 def create_post():
-    if request.is_json:
-        data = request.get_json()
-        new_post = Post(title=data['title'], body=data['body'])
-        db.session.add(new_post)
-        db.session.commit()
-        results = {
-            "Result": f"Post '{new_post.title}' created."
-        }
-
-        return jsonify(results)
-
+    data = request.get_json()
+    new_post = Post(title=data['title'], body=data['body'])
+    db.session.add(new_post)
+    db.session.commit()
+    results = {
+        "Result": f"Post '{new_post.title}' created."
+    }
+    return jsonify(results)
 
 @bp.route('/posts/<int:post_id>', methods=['GET'])
 def get_post(post_id):
@@ -50,17 +47,16 @@ def get_post(post_id):
 @bp.route('/posts/<int:post_id>', methods=['PUT'])
 def update_post(post_id):
     post = Post.query.get_or_404(post_id)
-    if request.is_json:
-        data = request.get_json()
-        post.title = data['title']
-        post.body = data['body']
-        db.session.add(post)
-        db.session.commit()
-        results = {
-            "Result": f"Post '{post.title}' updated."
-        }
+    data = request.get_json()
+    post.title = data['title']
+    post.body = data['body']
+    db.session.add(post)
+    db.session.commit()
+    results = {
+        "Result": f"Post '{post.title}' updated."
+    }
 
-        return jsonify(results)
+    return jsonify(results)
 
 
 @bp.route('/posts/<int:post_id>', methods=['DELETE'])
