@@ -1,13 +1,15 @@
 from flask import (
-    Blueprint, flash, g, redirect, render_template, request, url_for
+    Blueprint, flash, g, redirect, render_template, request, url_for, jsonify
 )
 from werkzeug.exceptions import abort
-
 from flaskr import db
 from flaskr.models.ainfs import Post
+from flaskr.api.v1.celery.celery_tasks import long_task
 
 import requests
 import json
+
+
 url = 'http://127.0.0.1:5000'
 
 bp = Blueprint('blog', __name__)
@@ -20,10 +22,56 @@ headers = {
 @bp.route('/')
 def index():
     path = '/api/v1/posts'
-
     results = requests.request('GET', url + path)
 
     return render_template('blog/index.html', results=results.json())
+
+
+@bp.route('/task', methods=('GET', 'POST'))
+def celery_task():
+    if request.method == 'POST':
+        path = '/api/v1/longtask'
+        results = requests.request('PUT', url + path)
+        results = results.json()
+
+        return redirect(url_for('blog.taskstatus', task_id = results['taskID']))
+
+
+    return render_template('blog/task.html')
+
+
+@bp.route('/status/<task_id>')
+def taskstatus(task_id):
+    task = long_task.AsyncResult(task_id)
+    response = {
+        'state': task.state,
+        'status': str(task.info)
+    }
+    # if task.state == 'PENDING':
+    #     response = {
+    #         'state': task.state,
+    #         'current': 0,
+    #         'total': 1,
+    #         'status': 'Pending...'
+    #     }
+    # elif task.state != 'FAILURE':
+    #     response = {
+    #         'state': task.state,
+    #         'current': task.info.get('current', 0),
+    #         'total': task.info.get('total', 1),
+    #         'status': task.info.get('status', '')
+    #     }
+    #     if 'result' in task.info:
+    #         response['result'] = task.info['result']
+    # else:
+    #     # something went wrong in the background job
+    #     response = {
+    #         'state': task.state,
+    #         'current': 1,
+    #         'total': 1,
+    #         'status': str(task.info),  # this is the exception raised
+    #     }
+    return jsonify(response)
 
 
 @bp.route('/create', methods=('GET', 'POST'))

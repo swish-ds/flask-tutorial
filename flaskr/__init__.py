@@ -2,22 +2,24 @@
 # tells Python that the flaskr directory should be treated as a package
 import os
 import app_config
-
+import jinja2
 
 from flask import Flask, current_app
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from datetime import datetime
-import jinja2
+from celery import Celery
 
 
 db = SQLAlchemy()
 migrate = Migrate()
 
+celery = Celery(__name__)
+# celery = Celery(__name__, broker=app_config.Config.CELERY_BROKER_URL, backend=app_config.Config.CELERY_RESULT_BACKEND)
+
 
 def datetime_format(value):
     return datetime.strptime(value, '%a, %d %b %Y %H:%M:%S %Z').strftime('%Y-%m-%d %H:%M:%S')
-
 
 jinja2.filters.FILTERS["datetime_format"] = datetime_format
 
@@ -31,23 +33,31 @@ def init_app(app):
     migrate.init_app(app, db)
 
 
+def make_celery(app):
+    celery.config_from_object(app_config.Config)
+    TaskBase = celery.Task
+
+    class ContextTask(TaskBase):
+        abstract = True
+
+        def __call__(self, *args, **kwargs):
+            with app.app_context():
+                return TaskBase.__call__(self, *args, **kwargs)
+
+    celery.Task = ContextTask
+
+    return celery
+
+
 def create_app(test_config=None):
     # create and configure the app
-    app = Flask(__name__, instance_relative_config=True) # configuration files are relative to the instance folder located outside the flaskr package
-
-    # app.config.from_mapping(
-    #     SECRET_KEY='dev', # used by Flask and extensions to keep data safe
-    #     # DATABASE=os.path.join(app.instance_path, 'flaskr.sqlite'),
-    # ) # some default configuration
+    app = Flask(__name__)
 
     if test_config is None:
-        # load the instance config, if it exists, when not testing
         app.config.from_object(app_config.Config)
     else:
-        # load the test config if passed in
         app.config.from_object(test_config)
 
-    # ensure the instance folder exists
     try:
         os.makedirs(app.instance_path)
     except OSError:
@@ -55,11 +65,13 @@ def create_app(test_config=None):
 
     init_app(app)
 
-    # a simple page that says hello
+
     @app.route('/hello')
     def hello():
         # return 'Hello, World!'
         return current_app.config['SQLALCHEMY_DATABASE_URI']
+
+    # make_celery(app)
 
     from . import blog
     # add_url_rule() associates the endpoint name 'index' with the "/"" url
@@ -67,9 +79,20 @@ def create_app(test_config=None):
     app.register_blueprint(blog.bp)
     app.add_url_rule('/', endpoint='index')
 
+    # make_celery(app)
+
     from .api.v1 import bp as api_bp
     app.register_blueprint(api_bp , url_prefix='/api/v1')
 
+    make_celery(app)
+
+    # celery.config_from_object(app_config.Config)
+
     return app
 
-from flaskr.models import ainfs
+# from flaskr.models import ainfs
+# from flaskr.api.v1.celery.celery_tasks import long_task
+
+# celery -A flaskr.celery worker --loglevel=info
+# celery -A celery_worker.celery worker --loglevel=info
+# celery -A celery_worker.celery worker -l info -E

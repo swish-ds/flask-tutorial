@@ -1,7 +1,7 @@
 from flaskr import db
 from flaskr.models.ainfs import Post
 from flaskr.api.v1 import bp
-from flask import jsonify, request, Response
+from flask import jsonify, request
 
 
 @bp.route('/posts', methods=['GET'])

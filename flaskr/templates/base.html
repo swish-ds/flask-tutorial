@@ -6,7 +6,8 @@
   <!-- g is automatically available in templates -->
   <!-- url_for() is also automatically available -->
   <ul>
-    <li><a href="{{ url_for('blog.create') }}">Create a post</a>
+    <li><a href="{{ url_for('blog.celery_task') }}">Create a task</a></li>
+    <li><a href="{{ url_for('blog.create') }}">Create a post</a></li>
   </ul>
 </nav>
 <section class="content">
