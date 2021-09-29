@@ -4,7 +4,7 @@ from flask import (
 from werkzeug.exceptions import abort
 from flaskr import db
 from flaskr.models.ainfs import Post
-from flaskr.api.v1.celery.celery_tasks import long_task
+from flaskr.api.v1.celery.celery_tasks import long_task2
 
 import requests
 import json
@@ -31,8 +31,16 @@ def index():
 def celery_task():
     if request.method == 'POST':
         path = '/api/v1/longtask'
-        results = requests.request('PUT', url + path)
+        title = request.form['title']
+        body = request.form['body']
+        payload = json.dumps({
+        "title": title,
+        "body": body
+        })
+
+        results = requests.request('PUT', url + path, headers=headers, data=payload)
         results = results.json()
+        # return results.text
 
         return redirect(url_for('blog.taskstatus', task_id = results['taskID']))
 
@@ -42,7 +50,7 @@ def celery_task():
 
 @bp.route('/status/<task_id>')
 def taskstatus(task_id):
-    task = long_task.AsyncResult(task_id)
+    task = long_task2.AsyncResult(task_id)
     response = {
         'state': task.state,
         'status': str(task.info)

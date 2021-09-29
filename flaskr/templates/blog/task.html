@@ -4,19 +4,19 @@
   <h1>{% block title %}New Task{% endblock %}</h1>
 {% endblock %}
 
-{% block content %}
+<!-- {% block content2 %}
   <form method="post">
     <input type="submit" value="Start">
   </form>
-{% endblock %}
+{% endblock %} -->
 
 
-<!-- {% block content2 %}
+{% block content %}
   <form method="post">
     <label for="title">Title</label>
     <input name="title" id="title" value="{{ request.form['title'] }}">
     <label for="body">Body</label>
     <textarea name="body" id="body">{{ request.form['body'] }}</textarea>
-    <input type="submit" value="Save">
+    <input type="submit" value="Start">
   </form>
-{% endblock %} -->
+{% endblock %}
