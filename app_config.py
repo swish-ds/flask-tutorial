@@ -22,3 +22,12 @@ class Config(object):
     worker_send_task_events = True
     task_send_sent_event = True
     worker_hijack_root_logger = False
+    broker_connection_retry = False
+
+class TestConfig(Config):
+    TESTING = True
+    task_always_eager = True
+    broker_connection_retry = False
+    # broker_url = "redis://"
+    # result_backend = "redis://"
+

@@ -130,7 +130,7 @@ def create_app(test_config=None):
 
     # make_celery(app)
 
-    from .api.v1 import bp as api_bp
+    from flaskr.api.v1 import bp as api_bp
     app.register_blueprint(api_bp , url_prefix='/api/v1')
 
     make_celery(app)

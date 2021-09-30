@@ -1,26 +1,22 @@
 # contains setup functions called fixtures that each test will use
 
-from app_config import Config
+from app_config import TestConfig
 
 import pytest
 from flaskr import create_app, db
 
 
-class TestConfig(Config):
-    TESTING = True
-
+# class TestConfig(Config):
 # scope = session ??
-@pytest.fixture()
+@pytest.fixture(scope='session')
 def app():
-    # will call the factory and pass TestConfig to configure the application and database for testing
     # create_app() gives us an app object, but the imported db isn’t connected (it has no engine)
     app = create_app(TestConfig)
 
-    #create an AppContext instalnce and bind context to it. The same as with app.app_context(): ... ?
     app_context = app.app_context()
     # DB engine gets populated.
     app_context.push()
-    # db.drop_all
+    db.drop_all()
     db.create_all()
 
     yield app
@@ -28,6 +24,16 @@ def app():
     db.session.remove()
     db.drop_all()
     app_context.pop()
+
+
+@pytest.fixture(scope='session')
+def celery_app(app):
+    from flaskr import celery
+    from celery.contrib.testing import tasks
+
+    celery.config_from_object(TestConfig)
+    # client = app.test_client()
+    yield celery
 
 
 @pytest.fixture()

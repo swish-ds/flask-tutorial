@@ -15,13 +15,16 @@ def add_to_db(title, body):
 
 
 @celery.task(bind=True)
-def long_task2(self, title, body):
-    total = random.randint(5, 10)
-    for i in range(total):
-        logger.info(f'Insert in {total - i} seconds')
-        time.sleep(1)
+def celery_insert(self, title, body):
+    # total = random.randint(5, 10)
+    # for i in range(total):
+    #     logger.info(f'Insert in {total - i} seconds')
+    #     logger.info(f'Eager: {celery.conf.task_always_eager}')
+    #     time.sleep(1)
     logger.info(f'Insert post into the database')
     add_to_db(title, body)
+    # return title
+    return {'status': f'Successfully inserted post {title}'}
 
 
 

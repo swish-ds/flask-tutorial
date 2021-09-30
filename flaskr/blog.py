@@ -4,7 +4,7 @@ from flask import (
 from werkzeug.exceptions import abort
 from flaskr import db
 from flaskr.models.ainfs import Post
-from flaskr.api.v1.celery.celery_tasks import long_task2
+from flaskr.api.v1.celery.celery_tasks import celery_insert
 
 import requests
 import json
@@ -50,7 +50,7 @@ def celery_task():
 
 @bp.route('/status/<task_id>')
 def taskstatus(task_id):
-    task = long_task2.AsyncResult(task_id)
+    task = celery_insert.AsyncResult(task_id)
     response = {
         'state': task.state,
         'status': str(task.info)
